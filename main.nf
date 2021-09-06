@@ -40,6 +40,7 @@ process annotate {
 
 
 process index {
+    container "soedinglab/mmseqs2"
     cpus "${params.max_cpus}"
 
     input:
@@ -60,6 +61,7 @@ workflow {
     // Channels
     db = channel.fromPath(params.db)
     genomes = channel.fromPath(params.genomes)
+                     .splitCsv(header: false)
                      .map{ fp -> tuple(fp.simpleName, fp) }
     
     // Action
