@@ -4,7 +4,7 @@ nextflow.enable.dsl = 2
 process coding {
     container 'nanozoo/prodigal:2.6.3--2769024'
     // Some genomes might have been corrupted during download
-    // errorStrategy 'ignore'
+    errorStrategy 'ignore'
     cpus 1
 
     input:
@@ -21,10 +21,9 @@ process coding {
 
 
 process annotate {
-    publishDir "${params.results}", mode: 'copy', overwrite: true
+    publishDir "${params.results}/virulence", mode: 'copy', overwrite: true
     container "soedinglab/mmseqs2"
     cpus 4
-
 
     input:
         tuple(val(name), path(proteins), path(db))
@@ -40,7 +39,7 @@ process annotate {
 
 
 process index {
-    container "soedinglab/mmseqs2"
+    container 'soedinglab/mmseqs2'
     cpus "${params.max_cpus}"
 
     input:
@@ -56,6 +55,23 @@ process index {
 }
 
 
+process prokka {
+    publishDir "${params.results}/annotation", mode: 'copy', overwrite: true
+    container 'nanozoo/prokka:1.14.6--c99ff65'
+    cpus 4
+
+    input:
+        tuple(val(name), path(proteins))
+
+    output:
+        tuple(val(name), path("annotation/${name}.gff"))
+
+    """
+    prokka --mincontiglen 2000 --cpus ${task.cpus} --prefix ${name} --outdir annotation
+    """
+}
+
+
 workflow {
 
     // Channels
@@ -63,11 +79,13 @@ workflow {
     genomes = channel.fromPath(params.genomes)
                      .splitCsv(header: false)
                      .map{ fp -> tuple(fp.simpleName, fp) }
-    
+
     // Action
     coding(genomes)
     index(db)
 
-    annotate(coding.out.combine(index.out.toList()))
+    // annotate(coding.out.combine(index.out.toList()))
+
+    prokka(coding)
 }
 

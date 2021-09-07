@@ -3,6 +3,8 @@
 
 '''
 Given a folder and a wildcard, generate an input csv and a backtranslation table.
+
+python input.py -i test -o input.csv -p '*.fna.gz'
 '''
 
 
@@ -35,7 +37,7 @@ def main(args=None):
 
     with open(args.o, 'w+') as out:
         for i in Path(args.i).glob(args.p):
-            out.write(f'{uuid4().__str__()},{i.__str__()}\n')
+            out.write(f'{uuid4().__str__()},{i.absolute().__str__()}\n')
 
 
 if __name__ == '__main__':
